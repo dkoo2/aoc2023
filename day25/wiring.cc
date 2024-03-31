@@ -26,7 +26,21 @@ Wiring::Wiring(const std::vector<std::string>& wirings) {
             mapping_[t].insert(split[0]);
         }
     }
-    all_.insert(all_.end(), all_unique.begin(), all_unique.end());
+    int index = 0;
+    all_.reserve(all_unique.size());
+    for (const std::string& str : all_unique) {
+        all_.push_back(str);
+        name_to_index_[str] = index;
+        index++;
+    }
+    // Rewrite the map using integers.
+    for (const auto& [name, neighbors] : mapping_) {
+        assert(name_to_index_.contains(name));
+        const int index = name_to_index_[name];
+        for (const std::string& neighbor : neighbors) {
+            mapping_fast_[index].insert(name_to_index_[neighbor]);
+        }
+    }
 }
 
 int Wiring::MostEncountered() {
@@ -35,9 +49,11 @@ int Wiring::MostEncountered() {
     const int max_node = all_.size();
     absl::BitGen bitgen;
 
-    absl::flat_hash_map<std::pair<std::string, std::string>, int> edge_counts;
+    absl::flat_hash_map<std::pair<int, int>, int> edge_counts;
+
+    auto path_finder_start = std::chrono::system_clock::now();
     while (true) {
-        if (processed.size() >= 1500) {
+        if (processed.size() >= 500) {
             break;
         }
         int from = absl::Uniform(bitgen, 0, max_node);
@@ -47,18 +63,16 @@ int Wiring::MostEncountered() {
         }
         processed.insert(std::make_pair(from, to));
         processed.insert(std::make_pair(to, from));
-        const std::string& from_str = all_[from];
-        const std::string& to_str = all_[to];
+
         std::vector<Path> queue;
-        queue.emplace_back(from_str);
-        absl::flat_hash_set<std::pair<std::string, std::string>> global_seen;
+        queue.emplace_back(from);
+        absl::flat_hash_set<std::pair<int, int>> global_seen;
         while (!queue.empty()) {
             std::vector<Path> next;
             for (Path& p : queue) {
-                if (auto it = mapping_.find(p.prev()); it != mapping_.end()) {
-                    for (const std::string& candidate : it->second) {
-                        if (candidate == to_str) {
-                            assert(p.CanStep(candidate));
+                if (auto it = mapping_fast_.find(p.prev()); it != mapping_fast_.end()) {
+                    for (const int candidate : it->second) {
+                        if (candidate == to) {
                             Path new_p = p;
                             new_p.Step(candidate);
                             for (const auto& edge : new_p.SeenEdges()) {
@@ -79,7 +93,12 @@ int Wiring::MostEncountered() {
             queue = std::move(next);
         }
     }
-    std::vector<std::tuple<std::string, std::string, int>> sorted;
+    auto path_finder_end = std::chrono::system_clock::now();
+    auto pf_elapsed =
+        std::chrono::duration_cast<std::chrono::milliseconds>(path_finder_end - path_finder_start);
+    std::cout << "Path Finder : " << pf_elapsed.count() << std::endl;
+
+    std::vector<std::tuple<int, int, int>> sorted;
     sorted.reserve(edge_counts.size());
     for (const auto& [key, val] : edge_counts) {
         sorted.emplace_back(key.first, key.second, val);
@@ -90,21 +109,21 @@ int Wiring::MostEncountered() {
               });
     // Remove the 6 edges found.
     for (int i = 0; i < 6; ++i) {
-        const std::string& from = std::get<0>(sorted[i]);
-        const std::string& to = std::get<1>(sorted[i]);
-        mapping_[from].erase(to);
-        mapping_[to].erase(from);
+        const int from = std::get<0>(sorted[i]);
+        const int to = std::get<1>(sorted[i]);
+        mapping_fast_[from].erase(to);
+        mapping_fast_[to].erase(from);
     }
     // Pick a random node. Find how many are reachable from this node.
-    const std::string& random_node = all_[0];
-    absl::flat_hash_set<std::string> seen;
+    const int random_node = 0;
+    absl::flat_hash_set<int> seen;
     seen.insert(random_node);
-    std::vector<std::string> queue = {random_node};
+    std::vector<int> queue = {random_node};
     while (true) {
-        std::vector<std::string> next;
-        for (const std::string& el : queue) {
-            if (auto it = mapping_.find(el); it != mapping_.end()) {
-                for (const std::string& c : it->second) {
+        std::vector<int> next;
+        for (const int el : queue) {
+            if (auto it = mapping_fast_.find(el); it != mapping_fast_.end()) {
+                for (const int c : it->second) {
                     if (seen.contains(c)) {
                         continue;
                     }

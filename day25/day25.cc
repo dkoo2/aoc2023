@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <chrono>
 
 #include "absl/strings/str_cat.h"
 #include "wiring.h"
@@ -26,8 +27,12 @@ int main() {
     input.close();
 
     aoc2023::Wiring wiring(strings);
-    // std::cout << wiring.size() << std::endl;
-    // std::cout << wiring.Print() << std::endl;
-    std::cout << wiring.MostEncountered() << std::endl;
+    int most = -1;
+    auto start = std::chrono::system_clock::now();
+    most = wiring.MostEncountered();
+    auto end = std::chrono::system_clock::now();
+    auto elapsed =
+        std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    std::cout << "Encountered : " << most << " " << elapsed.count() << std::endl;
     return 0;
 }

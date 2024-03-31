@@ -8,31 +8,28 @@ namespace aoc2023 {
 
 class Path {
    public:
-    explicit Path(const std::string& start) {
-        path_.push_back(start);
-    }
+    explicit Path(const int start) { last_ = start; }
 
-    bool CanStep(const std::string& node) {
+    bool CanStep(const int node) {
         return !visited_path_.contains(std::make_pair(node, prev())) &&
                !visited_path_.contains(std::make_pair(prev(), node));
     }
 
-    const std::string& prev() const { return path_.back(); }
+    const int prev() const { return last_; }
 
-    void Step(const std::string& node) {
+    void Step(const int node) {
         visited_path_.insert(std::make_pair(prev(), node));
         visited_path_.insert(std::make_pair(node, prev()));
-        path_.push_back(node);
+        last_ = node;
     }
 
-    const absl::flat_hash_set<std::pair<std::string, std::string>>& SeenEdges()
-        const {
+    const absl::flat_hash_set<std::pair<int, int>>& SeenEdges() const {
         return visited_path_;
     }
 
    private:
-    std::vector<std::string> path_;
-    absl::flat_hash_set<std::pair<std::string, std::string>> visited_path_;
+    int last_;
+    absl::flat_hash_set<std::pair<int, int>> visited_path_;
 };
 
 class Wiring {
@@ -46,6 +43,8 @@ class Wiring {
 
    private:
     absl::flat_hash_map<std::string, absl::flat_hash_set<std::string>> mapping_;
+    absl::flat_hash_map<int, absl::flat_hash_set<int>> mapping_fast_;
+    absl::flat_hash_map<std::string, int> name_to_index_;
     std::vector<std::string> all_;
 };
 
