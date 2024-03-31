@@ -20,6 +20,7 @@ cc_binary(
         "@abseil-cpp//absl/strings",
         ":wiring",
     ],
+    copts = ["--std=c++17", "-O2"],
     linkopts = [
         "-lm",
     ],

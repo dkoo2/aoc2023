@@ -1,13 +1,13 @@
 #include "wiring.h"
 
-#include <span>
-#include <random>
 #include <algorithm>
+#include <random>
+#include <span>
 
-#include "absl/strings/str_split.h"
-#include "absl/strings/str_join.h"
-#include "absl/random/random.h"
 #include "absl/random/distributions.h"
+#include "absl/random/random.h"
+#include "absl/strings/str_join.h"
+#include "absl/strings/str_split.h"
 
 namespace aoc2023 {
 
@@ -53,7 +53,7 @@ int Wiring::MostEncountered() {
 
     auto path_finder_start = std::chrono::system_clock::now();
     while (true) {
-        if (processed.size() >= 500) {
+        if (processed.size() >= 250) {
             break;
         }
         int from = absl::Uniform(bitgen, 0, max_node);
@@ -70,7 +70,8 @@ int Wiring::MostEncountered() {
         while (!queue.empty()) {
             std::vector<Path> next;
             for (Path& p : queue) {
-                if (auto it = mapping_fast_.find(p.prev()); it != mapping_fast_.end()) {
+                if (auto it = mapping_fast_.find(p.prev());
+                    it != mapping_fast_.end()) {
                     for (const int candidate : it->second) {
                         if (candidate == to) {
                             Path new_p = p;
@@ -78,14 +79,17 @@ int Wiring::MostEncountered() {
                             for (const auto& edge : new_p.SeenEdges()) {
                                 edge_counts[edge]++;
                             }
-                        } else if (global_seen.contains(std::make_pair(p.prev(), candidate))) {
+                        } else if (global_seen.contains(
+                                       std::make_pair(p.prev(), candidate))) {
                             continue;
                         } else if (p.CanStep(candidate)) {
                             Path new_p = p;
                             new_p.Step(candidate);
                             next.push_back(new_p);
-                            global_seen.insert(std::make_pair(p.prev(), candidate));
-                            global_seen.insert(std::make_pair(candidate, p.prev()));
+                            global_seen.insert(
+                                std::make_pair(p.prev(), candidate));
+                            global_seen.insert(
+                                std::make_pair(candidate, p.prev()));
                         }
                     }
                 }
@@ -144,18 +148,17 @@ int Wiring::MostEncountered() {
 
 bool Wiring::Connected() const {
     // Pick a node, and BFS outwards, until we can't visit anymore.
-    absl::flat_hash_set<std::string> visited;
-    const std::string& first = mapping_.begin()->first;
+    absl::flat_hash_set<int> visited;
+    const int first = mapping_fast_.begin()->first;
     // Add a sink node.
-    std::vector<std::string> queue;
+    std::vector<int> queue;
     queue.push_back(first);
     visited.insert(first);
     while (visited.size() < all_.size()) {
-        std::vector<std::string> next;
-        for (const std::string& l : queue) {
-            assert(mapping_.contains(l));
-            if (auto it = mapping_.find(l); it != mapping_.end()) {
-                for (const std::string& tt : it->second) {
+        std::vector<int> next;
+        for (const int l : queue) {
+            if (auto it = mapping_fast_.find(l); it != mapping_fast_.end()) {
+                for (const int tt : it->second) {
                     if (!visited.contains(tt)) {
                         visited.insert(tt);
                         next.push_back(tt);
