@@ -33,7 +33,8 @@ int main() {
     auto end = std::chrono::system_clock::now();
     auto elapsed =
         std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-    std::cout << "Encountered : " << most << " " << elapsed.count() << std::endl;
+    std::cout << "Encountered : " << most << " elapsed time " << elapsed.count()
+              << std::endl;
 
     return 0;
 }

@@ -51,9 +51,8 @@ int Wiring::MostEncountered() {
 
     absl::flat_hash_map<std::pair<int, int>, int> edge_counts;
 
-    auto path_finder_start = std::chrono::system_clock::now();
     while (true) {
-        if (processed.size() >= 250) {
+        if (processed.size() >= 200) {
             break;
         }
         int from = absl::Uniform(bitgen, 0, max_node);
@@ -69,6 +68,7 @@ int Wiring::MostEncountered() {
         absl::flat_hash_set<std::pair<int, int>> global_seen;
         while (!queue.empty()) {
             std::vector<Path> next;
+            next.reserve(queue.size());
             for (Path& p : queue) {
                 if (auto it = mapping_fast_.find(p.prev());
                     it != mapping_fast_.end()) {
@@ -76,13 +76,17 @@ int Wiring::MostEncountered() {
                         if (candidate == to) {
                             Path new_p = p;
                             new_p.Step(candidate);
-                            for (const auto& edge : new_p.SeenEdges()) {
-                                edge_counts[edge]++;
+                            const std::vector<int>& fullpath = new_p.FullPath();
+                            for (int i = 0; i < fullpath.size() - 1; ++i) {
+                                edge_counts[std::make_pair(fullpath[i],
+                                                           fullpath[i + 1])]++;
+                                edge_counts[std::make_pair(fullpath[i + 1],
+                                                           fullpath[i])]++;
                             }
                         } else if (global_seen.contains(
                                        std::make_pair(p.prev(), candidate))) {
                             continue;
-                        } else if (p.CanStep(candidate)) {
+                        } else {
                             Path new_p = p;
                             new_p.Step(candidate);
                             next.push_back(new_p);
@@ -97,10 +101,6 @@ int Wiring::MostEncountered() {
             queue = std::move(next);
         }
     }
-    auto path_finder_end = std::chrono::system_clock::now();
-    auto pf_elapsed =
-        std::chrono::duration_cast<std::chrono::milliseconds>(path_finder_end - path_finder_start);
-    std::cout << "Path Finder : " << pf_elapsed.count() << std::endl;
 
     std::vector<std::tuple<int, int, int>> sorted;
     sorted.reserve(edge_counts.size());

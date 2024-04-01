@@ -8,28 +8,17 @@ namespace aoc2023 {
 
 class Path {
    public:
-    explicit Path(const int start) { last_ = start; }
+    explicit Path(const int start) { path_.push_back(start); }
 
-    bool CanStep(const int node) {
-        return !visited_path_.contains(std::make_pair(node, prev())) &&
-               !visited_path_.contains(std::make_pair(prev(), node));
-    }
-
-    const int prev() const { return last_; }
+    const int prev() const { return path_.back(); }
 
     void Step(const int node) {
-        visited_path_.insert(std::make_pair(prev(), node));
-        visited_path_.insert(std::make_pair(node, prev()));
-        last_ = node;
+        path_.push_back(node);
     }
-
-    const absl::flat_hash_set<std::pair<int, int>>& SeenEdges() const {
-        return visited_path_;
-    }
+    const std::vector<int>& FullPath() const { return path_; }
 
    private:
-    int last_;
-    absl::flat_hash_set<std::pair<int, int>> visited_path_;
+    std::vector<int> path_;
 };
 
 class Wiring {
