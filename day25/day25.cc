@@ -24,7 +24,6 @@ int main() {
         strings.push_back(line);
     }
     input.close();
-
     aoc2023::Wiring wiring(strings);
     int most = -1;
 

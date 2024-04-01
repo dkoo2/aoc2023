@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <random>
-#include <span>
 
 #include "absl/random/distributions.h"
 #include "absl/random/random.h"
@@ -11,7 +10,7 @@
 
 namespace aoc2023 {
 
-Wiring::Wiring(const std::vector<std::string>& wirings) {
+Wiring::Wiring(std::span<const std::string> wirings) {
     absl::flat_hash_set<std::string> all_unique;
     for (const std::string& s : wirings) {
         const std::vector<std::string> split = absl::StrSplit(s, ":");
@@ -51,6 +50,8 @@ int Wiring::MostEncountered() {
 
     absl::flat_hash_map<std::pair<int, int>, int> edge_counts;
 
+    // Super hacky. Find any 100 pairs of nodes. Find the paths between them.
+    // At up all the edges in those paths. Pick the top 6 (directed).
     while (true) {
         if (processed.size() >= 200) {
             break;
@@ -69,32 +70,31 @@ int Wiring::MostEncountered() {
         while (!queue.empty()) {
             std::vector<Path> next;
             next.reserve(queue.size());
-            for (Path& p : queue) {
-                if (auto it = mapping_fast_.find(p.prev());
-                    it != mapping_fast_.end()) {
-                    for (const int candidate : it->second) {
-                        if (candidate == to) {
-                            Path new_p = p;
-                            new_p.Step(candidate);
-                            const std::vector<int>& fullpath = new_p.FullPath();
-                            for (int i = 0; i < fullpath.size() - 1; ++i) {
-                                edge_counts[std::make_pair(fullpath[i],
-                                                           fullpath[i + 1])]++;
-                                edge_counts[std::make_pair(fullpath[i + 1],
-                                                           fullpath[i])]++;
-                            }
-                        } else if (global_seen.contains(
-                                       std::make_pair(p.prev(), candidate))) {
-                            continue;
-                        } else {
-                            Path new_p = p;
-                            new_p.Step(candidate);
-                            next.push_back(new_p);
-                            global_seen.insert(
-                                std::make_pair(p.prev(), candidate));
-                            global_seen.insert(
-                                std::make_pair(candidate, p.prev()));
+            for (const Path& p : queue) {
+                const auto it = mapping_fast_.find(p.prev());
+                if (it == mapping_fast_.end()) {
+                    continue;
+                }
+                for (const int candidate : it->second) {
+                    if (candidate == to) {
+                        Path new_p = p;
+                        new_p.Step(candidate);
+                        const std::vector<int>& fullpath = new_p.FullPath();
+                        for (int i = 0; i < fullpath.size() - 1; ++i) {
+                            edge_counts[std::make_pair(fullpath[i],
+                                                       fullpath[i + 1])]++;
+                            edge_counts[std::make_pair(fullpath[i + 1],
+                                                       fullpath[i])]++;
                         }
+                    } else if (global_seen.contains(
+                                   std::make_pair(p.prev(), candidate))) {
+                        continue;
+                    } else {
+                        Path new_p = p;
+                        new_p.Step(candidate);
+                        next.push_back(new_p);
+                        global_seen.insert(std::make_pair(p.prev(), candidate));
+                        global_seen.insert(std::make_pair(candidate, p.prev()));
                     }
                 }
             }
@@ -123,10 +123,12 @@ int Wiring::MostEncountered() {
     absl::flat_hash_set<int> seen;
     seen.insert(random_node);
     std::vector<int> queue = {random_node};
-    while (true) {
+    do {
         std::vector<int> next;
+        next.reserve(queue.size());
         for (const int el : queue) {
-            if (auto it = mapping_fast_.find(el); it != mapping_fast_.end()) {
+            if (const auto it = mapping_fast_.find(el);
+                it != mapping_fast_.end()) {
                 for (const int c : it->second) {
                     if (seen.contains(c)) {
                         continue;
@@ -140,7 +142,8 @@ int Wiring::MostEncountered() {
             break;
         }
         queue = std::move(next);
-    }
+    } while (!queue.empty());
+
     const int seen_size = seen.size();
     const int unseen_size = all_.size() - seen_size;
     return seen_size * unseen_size;

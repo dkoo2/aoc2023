@@ -9,7 +9,7 @@ cc_library(
         "@abseil-cpp//absl/random",
     ],
     linkopts = [
-        "-lm",
+        "-flto",
     ],
 )
 
@@ -20,8 +20,8 @@ cc_binary(
         "@abseil-cpp//absl/strings",
         ":wiring",
     ],
-    copts = ["--std=c++17", "-O2"],
+    # copts = ["-std=c++20"],
     linkopts = [
-        "-lm",
+        "-flto",
     ],
 )

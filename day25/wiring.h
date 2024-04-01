@@ -23,7 +23,7 @@ class Path {
 
 class Wiring {
    public:
-    explicit Wiring(const std::vector<std::string>& wirings);
+    explicit Wiring(std::span<const std::string> wirings);
     int size() const { return mapping_.size(); }
     std::string Print() const;
     bool Connected() const;

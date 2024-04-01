@@ -47,6 +47,7 @@
         "variant": "cpp",
         "algorithm": "cpp",
         "queue": "cpp",
-        "iostream": "cpp"
+        "iostream": "cpp",
+        "fstream": "cpp"
     }
 }
