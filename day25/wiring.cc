@@ -12,6 +12,7 @@ namespace aoc2023 {
 
 Wiring::Wiring(std::span<const std::string> wirings) {
     absl::flat_hash_set<std::string> all_unique;
+    absl::flat_hash_map<std::string, absl::flat_hash_set<std::string>> mapping;
     for (const std::string& s : wirings) {
         const std::vector<std::string> split = absl::StrSplit(s, ":");
         assert(split.size() == 2);
@@ -21,23 +22,23 @@ Wiring::Wiring(std::span<const std::string> wirings) {
         all_unique.insert(split[0]);
         for (const std::string& t : targets) {
             all_unique.insert(t);
-            mapping_[split[0]].insert(t);
-            mapping_[t].insert(split[0]);
+            mapping[split[0]].insert(t);
+            mapping[t].insert(split[0]);
         }
     }
     int index = 0;
-    all_.reserve(all_unique.size());
+    all_ = all_unique.size();
+    absl::flat_hash_map<std::string, int> name_to_index;
     for (const std::string& str : all_unique) {
-        all_.push_back(str);
-        name_to_index_[str] = index;
+        name_to_index[str] = index;
         index++;
     }
     // Rewrite the map using integers.
-    for (const auto& [name, neighbors] : mapping_) {
-        assert(name_to_index_.contains(name));
-        const int index = name_to_index_[name];
+    for (const auto& [name, neighbors] : mapping) {
+        assert(name_to_index.contains(name));
+        const int index = name_to_index[name];
         for (const std::string& neighbor : neighbors) {
-            mapping_fast_[index].insert(name_to_index_[neighbor]);
+            mapping_fast_[index].insert(name_to_index[neighbor]);
         }
     }
 }
@@ -45,7 +46,6 @@ Wiring::Wiring(std::span<const std::string> wirings) {
 int Wiring::MostEncountered() {
     // Select two random nodes and collect the "seen" edges.
     absl::flat_hash_set<std::pair<int, int>> processed;
-    const int max_node = all_.size();
     absl::BitGen bitgen;
 
     absl::flat_hash_map<std::pair<int, int>, int> edge_counts;
@@ -56,8 +56,8 @@ int Wiring::MostEncountered() {
         if (processed.size() >= 200) {
             break;
         }
-        int from = absl::Uniform(bitgen, 0, max_node);
-        int to = absl::Uniform(bitgen, 0, max_node);
+        int from = absl::Uniform(bitgen, 0, all_);
+        int to = absl::Uniform(bitgen, 0, all_);
         if (from == to || processed.contains(std::make_pair(from, to))) {
             continue;
         }
@@ -111,6 +111,7 @@ int Wiring::MostEncountered() {
               [](const auto& lhs, const auto& rhs) {
                   return std::get<2>(lhs) > std::get<2>(rhs);
               });
+
     // Remove the 6 edges found.
     for (int i = 0; i < 6; ++i) {
         const int from = std::get<0>(sorted[i]);
@@ -118,6 +119,7 @@ int Wiring::MostEncountered() {
         mapping_fast_[from].erase(to);
         mapping_fast_[to].erase(from);
     }
+
     // Pick a random node. Find how many are reachable from this node.
     const int random_node = 0;
     absl::flat_hash_set<int> seen;
@@ -145,7 +147,7 @@ int Wiring::MostEncountered() {
     } while (!queue.empty());
 
     const int seen_size = seen.size();
-    const int unseen_size = all_.size() - seen_size;
+    const int unseen_size = all_ - seen_size;
     return seen_size * unseen_size;
 }
 
@@ -157,7 +159,7 @@ bool Wiring::Connected() const {
     std::vector<int> queue;
     queue.push_back(first);
     visited.insert(first);
-    while (visited.size() < all_.size()) {
+    while (visited.size() < all_) {
         std::vector<int> next;
         for (const int l : queue) {
             if (auto it = mapping_fast_.find(l); it != mapping_fast_.end()) {
@@ -174,19 +176,7 @@ bool Wiring::Connected() const {
         }
         queue = std::move(next);
     }
-    return visited.size() == all_.size();
-}
-
-std::string Wiring::Print() const {
-    std::string debug;
-    for (const auto& [key, targets] : mapping_) {
-        absl::StrAppend(&debug, key, " : ");
-        for (const std::string& t : targets) {
-            absl::StrAppend(&debug, t, " , ");
-        }
-        absl::StrAppend(&debug, "\n");
-    }
-    return debug;
+    return visited.size() == all_;
 }
 
 }  // namespace aoc2023

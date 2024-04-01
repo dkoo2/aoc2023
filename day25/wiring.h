@@ -24,17 +24,14 @@ class Path {
 class Wiring {
    public:
     explicit Wiring(std::span<const std::string> wirings);
-    int size() const { return mapping_.size(); }
-    std::string Print() const;
+    int size() const { return mapping_fast_.size(); }
     bool Connected() const;
 
     int MostEncountered();
 
    private:
-    absl::flat_hash_map<std::string, absl::flat_hash_set<std::string>> mapping_;
     absl::flat_hash_map<int, absl::flat_hash_set<int>> mapping_fast_;
-    absl::flat_hash_map<std::string, int> name_to_index_;
-    std::vector<std::string> all_;
+    int all_;
 };
 
 }  // namespace aoc2023

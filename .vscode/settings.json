@@ -48,6 +48,8 @@
         "algorithm": "cpp",
         "queue": "cpp",
         "iostream": "cpp",
-        "fstream": "cpp"
+        "fstream": "cpp",
+        "regex": "cpp",
+        "valarray": "cpp"
     }
 }
